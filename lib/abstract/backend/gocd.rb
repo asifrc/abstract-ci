@@ -3,8 +3,16 @@ module Abstract
     # GoCD Backend
     #
     class GoCD
+      def initialize
+        @connected = false
+      end
+
+      def create
+        @connected = true
+      end
+
       def connected?
-        false
+        @connected
       end
     end
   end
