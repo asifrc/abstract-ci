@@ -17,6 +17,19 @@ module Abstract
       describe '#create' do
         before(:each) do
           @backend = GoCD.new
+
+          @container_id = '30c479f9525711427a8548557'
+          stub_request(:post, %r{http://unix/.*/containers/create.*})
+            .with(
+              body: '{"Image":"gocd/gocd-dev","ExposedPorts":{"8153/tcp":{}},' \
+                    '"HostConfig":{"PortBindings":{"8153/tcp":[{}]}}}',
+              headers: { 'Content-Type' => 'application/json' }
+            )
+            .to_return(
+              status: 201,
+              body: "{\"Id\":\"#{@container_id}\",\"Warnings\":null}",
+              headers: { 'Content-Type' => 'application/json' }
+            )
         end
         it 'should not be connected before create' do
           stub_request(:any, @server_url)
@@ -27,29 +40,14 @@ module Abstract
 
         it 'should attempt to create and start container' do
           @backend = GoCD.new
-          container_id = '30c479f9525711427a8548557'
-          stub_request(:any, @server_url)
-            .to_raise(HTTParty::Error)
 
-          stub_request(:post, %r{http://unix/.*/containers/create.*})
-            .with(
-              body: '{"Image":"gocd/gocd-dev","ExposedPorts":{"8153/tcp":{}},' \
-                    '"HostConfig":{"PortBindings":{"8153/tcp":[{}]}}}',
-              headers: { 'Content-Type' => 'application/json' }
-            )
-            .to_return(
-              status: 201,
-              body: "{\"Id\":\"#{container_id}\",\"Warnings\":null}",
-              headers: { 'Content-Type' => 'application/json' }
-            )
-
-          starter_url = %r{http://unix/.*/containers/#{container_id}/start}
+          starter_url = %r{http://unix/.*/containers/#{@container_id}/start}
           starter_stub = stub_request(:post, starter_url)
                          .to_return(
                            status: 204,
                            body: ''
                          )
-          json_url = %r{http://unix/.*/containers/#{container_id}/json}
+          json_url = %r{http://unix/.*/containers/#{@container_id}/json}
           stub_request(:get, json_url)
             .to_return(
               status: 200,
@@ -64,20 +62,6 @@ module Abstract
         it 'should be connected after create' do
           @backend = GoCD.new
           container_id = '30c479f9525711427a8548557'
-          stub_request(:any, @server_url)
-            .to_raise(HTTParty::Error)
-
-          stub_request(:post, %r{http://unix/.*/containers/create.*})
-            .with(
-              body: '{"Image":"gocd/gocd-dev","ExposedPorts":{"8153/tcp":{}},' \
-                    '"HostConfig":{"PortBindings":{"8153/tcp":[{}]}}}',
-              headers: { 'Content-Type' => 'application/json' }
-            )
-            .to_return(
-              status: 201,
-              body: "{\"Id\":\"#{container_id}\",\"Warnings\":null}",
-              headers: { 'Content-Type' => 'application/json' }
-            )
 
           starter_url = %r{http://unix/.*/containers/#{container_id}/start}
           stub_request(:post, starter_url)
