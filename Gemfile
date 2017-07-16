@@ -1,5 +1,6 @@
 source 'https://rubygems.org'
 
+gem 'docker-api'
 gem 'httparty'
 
 group :test do
