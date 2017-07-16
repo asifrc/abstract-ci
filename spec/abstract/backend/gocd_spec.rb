@@ -12,13 +12,12 @@ module Abstract
         port = @docker_json['NetworkSettings']['Ports']['8153/tcp']
                .first['HostPort']
         @server_url = "http://#{ip}:#{port}"
+        @container_id = @docker_json['Id']
       end
 
       describe '#create' do
         before(:each) do
           @backend = GoCD.new
-
-          @container_id = '30c479f9525711427a8548557'
 
           stub_request(:post, %r{http://unix/.*/containers/create.*})
             .with(
@@ -107,6 +106,7 @@ module Abstract
           stub_request(:any, @server_url)
             .to_raise(HTTParty::Error)
 
+          @backend.server_url = @server_url
           expect(@backend.connected?).to be false
         end
 
