@@ -15,16 +15,18 @@ module Abstract
       end
 
       describe '#create' do
+        before(:each) do
+          @backend = GoCD.new
+        end
         it 'should not be connected before create' do
-          backend = GoCD.new
           stub_request(:any, @server_url)
             .to_raise(HTTParty::Error)
 
-          expect(backend.connected?).to be false
+          expect(@backend.connected?).to be false
         end
 
         it 'should attempt to create and start container' do
-          backend = GoCD.new
+          @backend = GoCD.new
           container_id = '30c479f9525711427a8548557'
           stub_request(:any, @server_url)
             .to_raise(HTTParty::Error)
@@ -54,13 +56,13 @@ module Abstract
               body: JSON.generate(@docker_json)
             )
 
-          backend.create
+          @backend.create
 
           expect(starter_stub).to have_been_requested
         end
 
         it 'should be connected after create' do
-          backend = GoCD.new
+          @backend = GoCD.new
           container_id = '30c479f9525711427a8548557'
           stub_request(:any, @server_url)
             .to_raise(HTTParty::Error)
@@ -97,9 +99,9 @@ module Abstract
                        })
           stub_request(:any, "#{@server_url}/go/home")
 
-          backend.create
+          @backend.create
 
-          expect(backend.connected?).to be true
+          expect(@backend.connected?).to be true
         end
       end
 
