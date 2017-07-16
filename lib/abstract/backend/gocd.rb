@@ -8,33 +8,49 @@ module Abstract
     class GoCD
       def initialize
         @connected = false
-        @container = nil
+        @server_url = nil
       end
 
       def create
-        container = Docker::Container.create(
-          'name' => 'abstract-gocd',
-          'Image' => 'gocd/gocd-dev'
-        )
+        container = Docker::Container.create(container_options)
         container.start
-        @container = container
+        protocol = 'http'
+        ip = container.json['NetworkSettings']['Gateway']
+        port = container.json['NetworkSettings']['Ports']['8153/tcp']
+                        .first['HostPort']
+        @server_url = "#{protocol}://#{ip}:#{port}"
       end
 
       def connected?
-        begin
-          response = HTTParty.get("http://#{docker_host_ip}:8153",
-                                  follow_redirects: false)
-          @connected = true if response.headers['Location'].eql? '/go/home'
-        rescue HTTParty::Error
+        if server_url
+          begin
+            response = HTTParty.get(@server_url,
+                                    follow_redirects: false)
+            @connected = true if response.headers['Location'].eql? '/go/home'
+          rescue HTTParty::Error
+            @connected = false
+          end
+        else
           @connected = false
         end
         @connected
       end
 
+      attr_accessor :server_url
+
       private
 
-      def docker_host_ip
-        `/sbin/ip route | awk '/default/ { print $3 }'`.strip
+      def container_options
+        {
+          'name' => 'abstract-gocd',
+          'Image' => 'gocd/gocd-dev',
+          'ExposedPorts' => { '8153/tcp' => {} },
+          'HostConfig' => {
+            'PortBindings' => {
+              '8153/tcp' => [{}]
+            }
+          }
+        }
       end
     end
   end
