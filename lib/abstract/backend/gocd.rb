@@ -1,3 +1,5 @@
+require 'httparty'
+
 module Abstract
   module Backend
     # GoCD Backend
@@ -8,7 +10,13 @@ module Abstract
       end
 
       def create
-        @connected = true
+        begin
+          HTTParty.get('http://localhost:8153')
+          @connected = true
+        rescue HTTParty::Error
+          @connected = false
+        end
+        @connected
       end
 
       def connected?
