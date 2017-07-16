@@ -2,7 +2,8 @@
 # `rubocop --auto-gen-config`
 # on 2017-07-16 15:12:02 +0000 using RuboCop version 0.49.1.
 
-# Configuration parameters: CountComments, ExcludedMethods.
 Metrics/BlockLength:
   Enabled: false
 
+Metrics/ModuleLength:
+  Enabled: false
