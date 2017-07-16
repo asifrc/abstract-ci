@@ -10,7 +10,7 @@ module Abstract
         @connected = false
       end
 
-      def create
+      def connected?
         begin
           response = HTTParty.get('http://localhost:8153',
                                   follow_redirects: false)
@@ -18,10 +18,6 @@ module Abstract
         rescue HTTParty::Error
           @connected = false
         end
-        @connected
-      end
-
-      def connected?
         @connected
       end
     end
