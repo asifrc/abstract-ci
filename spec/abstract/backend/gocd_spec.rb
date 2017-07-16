@@ -10,10 +10,13 @@ module Abstract
           expect(backend.connected?).to be false
         end
 
-        it 'should be connected after create' do
+        it 'should be connected after create if redirect to /go/home' do
           backend = GoCD.new
+          stub_request(:any, 'http://localhost:8153/go/home')
           stub_request(:any, 'http://localhost:8153/')
-            .to_return(status: 200, body: '', headers: {})
+            .to_return(status: 301, body: '', headers: {
+                         Location: '/go/home'
+                       })
 
           backend.create
 
@@ -34,6 +37,16 @@ module Abstract
           backend = GoCD.new
           stub_request(:any, 'http://localhost:8153/')
             .to_raise(HTTParty::Error)
+
+          backend.create
+
+          expect(backend.connected?).to be false
+        end
+
+        it 'should not be connected if root is not redirected to go home' do
+          backend = GoCD.new
+          stub_request(:any, 'http://localhost:8153/')
+            .to_return(status: 200, body: '', headers: {})
 
           backend.create
 

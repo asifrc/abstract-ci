@@ -1,4 +1,5 @@
 require 'httparty'
+require 'pry'
 
 module Abstract
   module Backend
@@ -11,8 +12,9 @@ module Abstract
 
       def create
         begin
-          HTTParty.get('http://localhost:8153')
-          @connected = true
+          response = HTTParty.get('http://localhost:8153',
+                                  follow_redirects: false)
+          @connected = true if response.headers['Location'].eql? '/go/home'
         rescue HTTParty::Error
           @connected = false
         end
