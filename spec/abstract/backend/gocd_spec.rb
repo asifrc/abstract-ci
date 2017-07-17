@@ -82,7 +82,6 @@ module Abstract
       describe '#connected?' do
         before(:each) do
           @backend = GoCD.new
-          puts @server_url
           @root_stub = stub_request(:get, @server_url)
                        .to_return(status: 301, body: '', headers: {
                                     Location: '/go/home'
