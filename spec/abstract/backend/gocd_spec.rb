@@ -116,6 +116,60 @@ module Abstract
           expect(@backend.connected?).to be false
         end
       end
+
+      describe '#destroy' do
+        before(:each) do
+          @backend = GoCD.new
+
+          stub_request(:post, %r{http://unix/.*/containers/create.*})
+            .with(
+              body: '{"Image":"gocd/gocd-dev","ExposedPorts":{"8153/tcp":{}},' \
+                    '"HostConfig":{"PortBindings":{"8153/tcp":[{}]}}}',
+              headers: { 'Content-Type' => 'application/json' }
+            )
+            .to_return(
+              status: 201,
+              body: "{\"Id\":\"#{@container_id}\",\"Warnings\":null}",
+              headers: { 'Content-Type' => 'application/json' }
+            )
+
+          starter_url = %r{http://unix/.*/containers/#{@container_id}/start}
+          stub_request(:post, starter_url)
+            .to_return(
+              status: 204,
+              body: ''
+            )
+          json_url = %r{http://unix/.*/containers/#{@container_id}/json}
+          stub_request(:get, json_url)
+            .to_return(
+              status: 200,
+              body: JSON.generate(@docker_json)
+            )
+          stub_request(:get, @server_url)
+            .to_return(status: 301, body: '', headers: {
+                         Location: '/go/home'
+                       })
+          stub_request(:any, "#{@server_url}/go/home")
+        end
+
+        it 'should attempt to kill the created container' do
+          kill_url = %r{http://unix/.*/containers/#{@container_id}/kill}
+          kill_stub = stub_request(:post, kill_url)
+                      .to_return(
+                        status: 204,
+                        body: ''
+                      )
+
+          @backend.create
+          @backend.destroy
+
+          expect(kill_stub).to have_been_requested
+        end
+
+        it 'should return nil if there is no container to kill' do
+          expect(@backend.destroy).to be nil
+        end
+      end
     end
   end
 end
