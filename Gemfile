@@ -5,6 +5,7 @@ gem 'httparty'
 gem 'thor'
 
 group :test do
+  gem 'coveralls', require: false
   gem 'pry'
   gem 'rspec'
   gem 'rubocop'
