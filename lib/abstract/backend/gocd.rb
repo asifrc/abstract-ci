@@ -13,6 +13,7 @@ module Abstract
       end
 
       def create
+        return @server_url if @container
         @container = Docker::Container.create(container_options)
         @container.start
         protocol = 'http'

@@ -57,13 +57,20 @@ module Abstract
         it 'should attempt to create and start container' do
           @backend.create
 
-          expect(@starter_stub).to have_been_requested
+          expect(@starter_stub).to have_been_requested.once
         end
 
         it 'should be connected after create' do
           @backend.create
 
           expect(@backend.connected?).to be true
+        end
+
+        it 'should create container only once when called twice' do
+          @backend.create
+          @backend.create
+
+          expect(@starter_stub).to have_been_requested
         end
       end
 
@@ -72,6 +79,7 @@ module Abstract
           backend = GoCD.new
           expect(backend.server_url.nil?).to be true
         end
+
         it 'should return an assigned value' do
           backend = GoCD.new
           backend.server_url = 'testvalue'
