@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 
 gem 'docker-api'
 gem 'httparty'
+gem 'thor'
 
 group :test do
   gem 'pry'
