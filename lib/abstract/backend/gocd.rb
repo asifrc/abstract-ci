@@ -8,8 +8,6 @@ module Abstract
     class GoCD
       def initialize
         @connected = false
-        @server_url = nil
-        @container = nil
       end
 
       def create
