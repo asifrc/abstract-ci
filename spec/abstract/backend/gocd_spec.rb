@@ -178,6 +178,71 @@ module Abstract
           expect(@backend.destroy).to be nil
         end
       end
+
+      describe '#wait_until_connected' do
+        before(:each) do
+          @backend = GoCD.new
+
+          stub_request(:post, %r{http://unix/.*/containers/create.*})
+            .with(
+              body: '{"Image":"gocd/gocd-dev","ExposedPorts":{"8153/tcp":{}},' \
+                    '"HostConfig":{"PortBindings":{"8153/tcp":[{}]}}}',
+              headers: { 'Content-Type' => 'application/json' }
+            )
+            .to_return(
+              status: 201,
+              body: "{\"Id\":\"#{@container_id}\",\"Warnings\":null}",
+              headers: { 'Content-Type' => 'application/json' }
+            )
+
+          starter_url = %r{http://unix/.*/containers/#{@container_id}/start}
+          stub_request(:post, starter_url)
+            .to_return(
+              status: 204,
+              body: ''
+            )
+          json_url = %r{http://unix/.*/containers/#{@container_id}/json}
+          stub_request(:get, json_url)
+            .to_return(
+              status: 200,
+              body: JSON.generate(@docker_json)
+            )
+          @server_stub = stub_request(:get, @server_url)
+          stub_request(:any, "#{@server_url}/go/home")
+
+          allow(@backend).to receive(:sleep)
+        end
+
+        it 'should check connection once when zero retries' do
+          @server_stub.to_raise(StandardError)
+          @backend.retries = 0
+          @backend.create
+          @backend.wait_until_connected
+          expect(@server_stub).to have_been_requested.once
+        end
+
+        it 'should check connection the number of retries specified plus one' do
+          @server_stub.to_raise(StandardError)
+          @backend.retries = 5
+          @backend.create
+          @backend.wait_until_connected
+          expect(@server_stub).to have_been_requested.times 6
+        end
+
+        it 'should stop checking the connection once connected' do
+          @server_stub
+            .to_raise(StandardError)
+            .to_raise(StandardError)
+            .to_raise(StandardError)
+            .then.to_return(status: 301, body: '', headers: {
+                              Location: '/go/home'
+                            })
+          @backend.retries = 5
+          @backend.create
+          @backend.wait_until_connected
+          expect(@server_stub).to have_been_requested.times 4
+        end
+      end
     end
   end
 end

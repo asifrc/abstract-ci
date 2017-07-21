@@ -8,6 +8,8 @@ module Abstract
     class GoCD
       def initialize
         @connected = false
+        @retries = 12
+        @retry_interval = 5
       end
 
       def create
@@ -41,7 +43,18 @@ module Abstract
         @connected
       end
 
+      def wait_until_connected
+        total_retries = 0
+        until connected? || total_retries == @retries
+          total_retries += 1
+          sleep @retry_interval
+        end
+        @connected
+      end
+
       attr_accessor :server_url
+      attr_accessor :retries
+      attr_accessor :retry_interval
 
       private
 
