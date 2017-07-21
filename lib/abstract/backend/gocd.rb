@@ -34,7 +34,7 @@ module Abstract
             response = HTTParty.get(@server_url,
                                     follow_redirects: false)
             @connected = true if response.headers['Location'].eql? '/go/home'
-          rescue HTTParty::Error
+          rescue StandardError
             @connected = false
           end
         else

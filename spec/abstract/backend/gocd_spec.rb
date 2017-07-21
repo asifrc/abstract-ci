@@ -111,7 +111,7 @@ module Abstract
 
         it 'should not show as connected when go server does not respond' do
           stub_request(:any, @server_url)
-            .to_raise(HTTParty::Error)
+            .to_raise(StandardError)
 
           @backend.server_url = @server_url
           expect(@backend.connected?).to be false
