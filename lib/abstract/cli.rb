@@ -10,6 +10,7 @@ module Abstract
     def create
       backend = Backend::GoCD.new
       backend.create
+      backend.wait_until_connected
     end
   end
 end
