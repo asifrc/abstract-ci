@@ -6,11 +6,12 @@ module Abstract
     # GoCD Backend
     #
     class GoCD
-      def initialize
-        @connected = false
-        @retries = 12
-        @retry_interval = 5
-      end
+      @retries = 12
+      @retry_interval = 5
+
+      attr_accessor :server_url
+      attr_accessor :retries
+      attr_accessor :retry_interval
 
       def create
         return @server_url if @container
@@ -51,10 +52,6 @@ module Abstract
         end
         @connected
       end
-
-      attr_accessor :server_url
-      attr_accessor :retries
-      attr_accessor :retry_interval
 
       private
 
