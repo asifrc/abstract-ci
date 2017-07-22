@@ -15,41 +15,46 @@ module Abstract
         @container_id = @docker_json['Id']
       end
 
+      before(:each) do
+        @backend = GoCD.new
+
+        stub_request(:post, %r{http://unix/.*/containers/create.*})
+          .with(
+            body: '{"Image":"gocd/gocd-dev","ExposedPorts":{"8153/tcp":{}},' \
+                  '"HostConfig":{"PortBindings":{"8153/tcp":[{}]}}}',
+            headers: { 'Content-Type' => 'application/json' }
+          )
+          .to_return(
+            status: 201,
+            body: "{\"Id\":\"#{@container_id}\",\"Warnings\":null}",
+            headers: { 'Content-Type' => 'application/json' }
+          )
+
+        starter_url = %r{http://unix/.*/containers/#{@container_id}/start}
+        @starter_stub = stub_request(:post, starter_url)
+                        .to_return(
+                          status: 204,
+                          body: ''
+                        )
+        json_url = %r{http://unix/.*/containers/#{@container_id}/json}
+        stub_request(:get, json_url)
+          .to_return(
+            status: 200,
+            body: JSON.generate(@docker_json)
+          )
+        stub_request(:get, @server_url)
+          .to_return(status: 301, body: '', headers: {
+                       Location: '/go/home'
+                     })
+        stub_request(:any, "#{@server_url}/go/home")
+        @root_stub = stub_request(:get, @server_url)
+                     .to_return(status: 301, body: '', headers: {
+                                  Location: '/go/home'
+                                })
+        allow(@backend).to receive(:sleep)
+      end
+
       describe '#create' do
-        before(:each) do
-          @backend = GoCD.new
-
-          stub_request(:post, %r{http://unix/.*/containers/create.*})
-            .with(
-              body: '{"Image":"gocd/gocd-dev","ExposedPorts":{"8153/tcp":{}},' \
-                    '"HostConfig":{"PortBindings":{"8153/tcp":[{}]}}}',
-              headers: { 'Content-Type' => 'application/json' }
-            )
-            .to_return(
-              status: 201,
-              body: "{\"Id\":\"#{@container_id}\",\"Warnings\":null}",
-              headers: { 'Content-Type' => 'application/json' }
-            )
-
-          starter_url = %r{http://unix/.*/containers/#{@container_id}/start}
-          @starter_stub = stub_request(:post, starter_url)
-                          .to_return(
-                            status: 204,
-                            body: ''
-                          )
-          json_url = %r{http://unix/.*/containers/#{@container_id}/json}
-          stub_request(:get, json_url)
-            .to_return(
-              status: 200,
-              body: JSON.generate(@docker_json)
-            )
-          stub_request(:get, @server_url)
-            .to_return(status: 301, body: '', headers: {
-                         Location: '/go/home'
-                       })
-          stub_request(:any, "#{@server_url}/go/home")
-        end
-
         it 'should not be connected before create' do
           expect(@backend.connected?).to be false
         end
@@ -70,33 +75,22 @@ module Abstract
           @backend.create
           @backend.create
 
-          expect(@starter_stub).to have_been_requested
+          expect(@starter_stub).to have_been_requested.once
         end
       end
 
       describe '#server_url' do
         it 'should be nil by default' do
-          backend = GoCD.new
-          expect(backend.server_url.nil?).to be true
+          expect(@backend.server_url.nil?).to be true
         end
 
         it 'should return an assigned value' do
-          backend = GoCD.new
-          backend.server_url = 'testvalue'
-          expect(backend.server_url).to eq 'testvalue'
+          @backend.server_url = 'testvalue'
+          expect(@backend.server_url).to eq 'testvalue'
         end
       end
 
       describe '#connected?' do
-        before(:each) do
-          @backend = GoCD.new
-          @root_stub = stub_request(:get, @server_url)
-                       .to_return(status: 301, body: '', headers: {
-                                    Location: '/go/home'
-                                  })
-          stub_request(:any, "#{@server_url}/go/home")
-        end
-
         it 'should be connected if redirected to /go/home' do
           @backend.server_url = @server_url
           expect(@backend.connected?).to be true
@@ -126,40 +120,6 @@ module Abstract
       end
 
       describe '#destroy' do
-        before(:each) do
-          @backend = GoCD.new
-
-          stub_request(:post, %r{http://unix/.*/containers/create.*})
-            .with(
-              body: '{"Image":"gocd/gocd-dev","ExposedPorts":{"8153/tcp":{}},' \
-                    '"HostConfig":{"PortBindings":{"8153/tcp":[{}]}}}',
-              headers: { 'Content-Type' => 'application/json' }
-            )
-            .to_return(
-              status: 201,
-              body: "{\"Id\":\"#{@container_id}\",\"Warnings\":null}",
-              headers: { 'Content-Type' => 'application/json' }
-            )
-
-          starter_url = %r{http://unix/.*/containers/#{@container_id}/start}
-          stub_request(:post, starter_url)
-            .to_return(
-              status: 204,
-              body: ''
-            )
-          json_url = %r{http://unix/.*/containers/#{@container_id}/json}
-          stub_request(:get, json_url)
-            .to_return(
-              status: 200,
-              body: JSON.generate(@docker_json)
-            )
-          stub_request(:get, @server_url)
-            .to_return(status: 301, body: '', headers: {
-                         Location: '/go/home'
-                       })
-          stub_request(:any, "#{@server_url}/go/home")
-        end
-
         it 'should attempt to kill the created container' do
           kill_url = %r{http://unix/.*/containers/#{@container_id}/kill}
           kill_stub = stub_request(:post, kill_url)
@@ -181,51 +141,26 @@ module Abstract
 
       describe '#wait_until_connected' do
         before(:each) do
-          @backend = GoCD.new
-
-          stub_request(:post, %r{http://unix/.*/containers/create.*})
-            .with(
-              body: '{"Image":"gocd/gocd-dev","ExposedPorts":{"8153/tcp":{}},' \
-                    '"HostConfig":{"PortBindings":{"8153/tcp":[{}]}}}',
-              headers: { 'Content-Type' => 'application/json' }
-            )
-            .to_return(
-              status: 201,
-              body: "{\"Id\":\"#{@container_id}\",\"Warnings\":null}",
-              headers: { 'Content-Type' => 'application/json' }
-            )
-
-          starter_url = %r{http://unix/.*/containers/#{@container_id}/start}
-          stub_request(:post, starter_url)
-            .to_return(
-              status: 204,
-              body: ''
-            )
-          json_url = %r{http://unix/.*/containers/#{@container_id}/json}
-          stub_request(:get, json_url)
-            .to_return(
-              status: 200,
-              body: JSON.generate(@docker_json)
-            )
           @server_stub = stub_request(:get, @server_url)
-          stub_request(:any, "#{@server_url}/go/home")
-
-          allow(@backend).to receive(:sleep)
         end
 
         it 'should check connection once when zero retries' do
           @server_stub.to_raise(StandardError)
           @backend.retries = 0
+
           @backend.create
           @backend.wait_until_connected
+
           expect(@server_stub).to have_been_requested.once
         end
 
         it 'should check connection the number of retries specified plus one' do
           @server_stub.to_raise(StandardError)
           @backend.retries = 5
+
           @backend.create
           @backend.wait_until_connected
+
           expect(@server_stub).to have_been_requested.times 6
         end
 
@@ -238,8 +173,10 @@ module Abstract
                               Location: '/go/home'
                             })
           @backend.retries = 5
+
           @backend.create
           @backend.wait_until_connected
+
           expect(@server_stub).to have_been_requested.times 4
         end
       end
