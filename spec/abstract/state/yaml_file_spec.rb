@@ -5,11 +5,6 @@ module Abstract
   module State
     describe YamlFile do
       describe '#setup' do
-        it 'should create .abstract directory if it does not exist' do
-          expect(FileUtils).to receive(:mkdir_p).with('./.abstract')
-          state = YamlFile.new
-          state.setup
-        end
       end
       describe '#load' do
         it 'should return hash from state.yml file' do
@@ -38,6 +33,17 @@ module Abstract
         end
       end
       describe '#update' do
+        it 'should create .abstract directory if it does not exist' do
+          expected_path = './.abstract/state.yml'
+          output = StringIO.new ''
+          allow(File).to receive(:open).with(expected_path).and_yield(output)
+          allow(File).to receive(:write)
+          expect(FileUtils).to receive(:mkdir_p).with('./.abstract')
+
+          state = YamlFile.new
+          state.update 'key', {}
+        end
+
         it 'should save hash as yaml to ./.abstract/state.yml' do
           backend_data = {
             'type' => 'gocd',

@@ -5,10 +5,6 @@ module Abstract
     # Yaml Statefile
     #
     class YamlFile
-      def setup
-        FileUtils.mkdir_p './.abstract'
-      end
-
       def load
         content = ''
         File.open('./.abstract/state.yml') do |file|
@@ -20,6 +16,7 @@ module Abstract
       end
 
       def update(key, data)
+        FileUtils.mkdir_p './.abstract'
         state_hash = load
         state_hash[key] = data
         content = YAML.dump state_hash
