@@ -11,6 +11,24 @@ module Abstract
           state.setup
         end
       end
+      describe '#load' do
+        it 'should return hash from state.yml file' do
+          expected_path = './.abstract/state.yml'
+          file_content = "---\nbackend:\n  type: gocd\n  id: a01b\n"
+          output = StringIO.new file_content
+          allow(File).to receive(:open).with(expected_path).and_yield(output)
+
+          state = YamlFile.new
+          state_hash = state.load
+
+          expect(state_hash).to include(
+            'backend' =>  hash_including(
+              'type' => 'gocd',
+              'id' => 'a01b'
+            )
+          )
+        end
+      end
       describe '#update' do
         it 'should save hash as yaml to ./.abstract/state.yml' do
           backend_data = {

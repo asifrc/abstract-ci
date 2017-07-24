@@ -9,6 +9,14 @@ module Abstract
         FileUtils.mkdir_p './.abstract'
       end
 
+      def load
+        content = {}
+        File.open('./.abstract/state.yml') do |file|
+          content = file.read
+        end
+        YAML.safe_load content
+      end
+
       def update(key, data)
         state_hash = {}
         state_hash[key] = data
