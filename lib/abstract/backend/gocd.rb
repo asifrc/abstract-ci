@@ -1,17 +1,22 @@
 require 'httparty'
 require 'docker'
 
+require 'abstract/state/yaml_file'
+
 module Abstract
   module Backend
     # GoCD Backend
     #
     class GoCD
-      @retries = 12
-      @retry_interval = 5
-
       attr_accessor :server_url
       attr_accessor :retries
       attr_accessor :retry_interval
+
+      def initialize(state = nil)
+        @retries = 12
+        @retry_interval = 5
+        @state = state || Abstract::State::YamlFile.new
+      end
 
       def create
         return @server_url if @container
@@ -22,6 +27,11 @@ module Abstract
         port = @container.json['NetworkSettings']['Ports']['8153/tcp']
                          .first['HostPort']
         @server_url = "#{protocol}://#{ip}:#{port}"
+        @state.update 'backend', 'type' => self.class.name,
+                                 'driver' => 'docker',
+                                 'id' => @container.id,
+                                 'server_url' => @server_url
+        @container
       end
 
       def destroy

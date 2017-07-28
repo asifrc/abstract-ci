@@ -16,7 +16,9 @@ module Abstract
       end
 
       before(:each) do
-        @backend = GoCD.new
+        @mock_state = instance_double(Abstract::State::YamlFile)
+        allow(@mock_state).to receive(:update)
+        @backend = GoCD.new @mock_state
 
         stub_request(:post, %r{http://unix/.*/containers/create.*})
           .with(
@@ -76,6 +78,11 @@ module Abstract
           @backend.create
 
           expect(@starter_stub).to have_been_requested.once
+        end
+
+        it 'should save its state to a statefile' do
+          expect(@mock_state).to receive(:update)
+          @backend.create
         end
       end
 
