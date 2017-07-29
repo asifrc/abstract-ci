@@ -58,6 +58,12 @@ module Abstract
                        Location: '/go/home'
                      })
         stub_request(:any, "#{@server_url}/go/home")
+        kill_url = %r{http://unix/.*/containers/#{@container_id}/kill}
+        @kill_stub = stub_request(:post, kill_url)
+                     .to_return(
+                       status: 204,
+                       body: ''
+                     )
         @root_stub = stub_request(:get, @server_url)
                      .to_return(status: 301, body: '', headers: {
                                   Location: '/go/home'
@@ -160,17 +166,9 @@ module Abstract
 
       describe '#destroy' do
         it 'should attempt to kill the created container' do
-          kill_url = %r{http://unix/.*/containers/#{@container_id}/kill}
-          kill_stub = stub_request(:post, kill_url)
-                      .to_return(
-                        status: 204,
-                        body: ''
-                      )
-
           @backend.create
           @backend.destroy
-
-          expect(kill_stub).to have_been_requested
+          expect(@kill_stub).to have_been_requested
         end
 
         it 'should load backend state' do
@@ -180,16 +178,14 @@ module Abstract
 
         it 'should attempt to kill container loaded from state' do
           allow(@mock_state).to receive(:load).and_return(@valid_state)
-          kill_url = %r{http://unix/.*/containers/#{@container_id}/kill}
-          kill_stub = stub_request(:post, kill_url)
-                      .to_return(
-                        status: 204,
-                        body: ''
-                      )
-
           @backend.destroy
+          expect(@kill_stub).to have_been_requested
+        end
 
-          expect(kill_stub).to have_been_requested
+        it 'should reset backend state to empty hash' do
+          allow(@mock_state).to receive(:load).and_return(@valid_state)
+          expect(@mock_state).to receive(:update).with('backend', {})
+          @backend.destroy
         end
 
         it 'should return nil if there is no container to kill' do

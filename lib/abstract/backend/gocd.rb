@@ -40,6 +40,8 @@ module Abstract
         refresh_state
         @container.kill if @container
         @container = nil
+        @server_url = nil
+        @state.update 'backend', {}
       end
 
       def connected?
