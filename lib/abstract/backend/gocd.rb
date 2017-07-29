@@ -37,6 +37,7 @@ module Abstract
       end
 
       def destroy
+        refresh_state
         @container.kill if @container
         @container = nil
       end

@@ -173,6 +173,25 @@ module Abstract
           expect(kill_stub).to have_been_requested
         end
 
+        it 'should load backend state' do
+          expect(@mock_state).to receive(:load)
+          @backend.destroy
+        end
+
+        it 'should attempt to kill container loaded from state' do
+          allow(@mock_state).to receive(:load).and_return(@valid_state)
+          kill_url = %r{http://unix/.*/containers/#{@container_id}/kill}
+          kill_stub = stub_request(:post, kill_url)
+                      .to_return(
+                        status: 204,
+                        body: ''
+                      )
+
+          @backend.destroy
+
+          expect(kill_stub).to have_been_requested
+        end
+
         it 'should return nil if there is no container to kill' do
           expect(@backend.destroy).to be nil
         end
