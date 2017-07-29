@@ -124,17 +124,6 @@ module Abstract
         end
       end
 
-      describe '#server_url' do
-        it 'should be nil by default' do
-          expect(@backend.server_url.nil?).to be true
-        end
-
-        it 'should return an assigned value' do
-          @backend.server_url = 'testvalue'
-          expect(@backend.server_url).to eq 'testvalue'
-        end
-      end
-
       describe '#connected?' do
         it 'should be connected if redirected to /go/home' do
           @backend.server_url = @server_url
