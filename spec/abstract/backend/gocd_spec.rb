@@ -146,6 +146,61 @@ module Abstract
         end
       end
 
+      describe '#valid_state?' do
+        before(:each) do
+          @valid_state = {
+            'backend' => {
+              'type' => 'GoCD',
+              'driver' => 'docker',
+              'id' => @container_id,
+              'server_url' => @server_url
+            }
+          }
+        end
+
+        it 'should be valid if all required fields are present' do
+          validity = @backend.valid_state? @valid_state
+
+          expect(validity).to be true
+        end
+        it 'should be invalid if nil state' do
+          validity = @backend.valid_state? nil
+          expect(validity).to be false
+        end
+
+        it 'should be invalid if empty state' do
+          validity = @backend.valid_state?({})
+          expect(validity).to be false
+        end
+
+        it 'should be invalid when missing backend key' do
+          invalid_state = {
+            'something_else' => {}
+          }
+          validity = @backend.valid_state? invalid_state
+          expect(validity).to be false
+        end
+
+        it 'should be invalid when missing any required keys' do
+          %w[
+            type
+            driver
+            id
+            server_url
+          ].each do |key|
+            invalid_backend = @valid_state['backend'].dup
+            invalid_backend.delete key
+            invalid_state = {
+              'backend' => invalid_backend
+            }
+
+            validity = @backend.valid_state? invalid_state
+
+            expect(validity).to be false
+          end
+        end
+      end
+
       describe '#wait_until_connected' do
         before(:each) do
           @server_stub = stub_request(:get, @server_url)

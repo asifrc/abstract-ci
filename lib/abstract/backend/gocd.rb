@@ -15,6 +15,7 @@ module Abstract
       def initialize(state = nil)
         @retries = 12
         @retry_interval = 5
+        @driver = 'docker'
         @state = state || Abstract::State::YamlFile.new
       end
 
@@ -28,7 +29,7 @@ module Abstract
                          .first['HostPort']
         @server_url = "#{protocol}://#{ip}:#{port}"
         @state.update 'backend', 'type' => self.class.name,
-                                 'driver' => 'docker',
+                                 'driver' => @driver,
                                  'id' => @container.id,
                                  'server_url' => @server_url
         @container
@@ -52,6 +53,20 @@ module Abstract
           @connected = false
         end
         @connected
+      end
+
+      def valid_state?(state)
+        return false unless state.respond_to? :dig
+        [
+          ['backend'],
+          %w[backend type],
+          %w[backend driver],
+          %w[backend id],
+          %w[backend server_url]
+        ].each do |required_path|
+          return false if state.dig(*required_path).nil?
+        end
+        true
       end
 
       def wait_until_connected
