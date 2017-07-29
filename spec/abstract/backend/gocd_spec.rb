@@ -13,11 +13,20 @@ module Abstract
                .first['HostPort']
         @server_url = "http://#{ip}:#{port}"
         @container_id = @docker_json['Id']
+        @valid_state = {
+          'backend' => {
+            'type' => 'GoCD',
+            'driver' => 'docker',
+            'id' => @container_id,
+            'server_url' => @server_url
+          }
+        }
       end
 
       before(:each) do
         @mock_state = instance_double(Abstract::State::YamlFile)
         allow(@mock_state).to receive(:update)
+        allow(@mock_state).to receive(:load).and_return({})
         @backend = GoCD.new @mock_state
 
         stub_request(:post, %r{http://unix/.*/containers/create.*})
@@ -39,11 +48,11 @@ module Abstract
                           body: ''
                         )
         json_url = %r{http://unix/.*/containers/#{@container_id}/json}
-        stub_request(:get, json_url)
-          .to_return(
-            status: 200,
-            body: JSON.generate(@docker_json)
-          )
+        @json_stub = stub_request(:get, json_url)
+                     .to_return(
+                       status: 200,
+                       body: JSON.generate(@docker_json)
+                     )
         stub_request(:get, @server_url)
           .to_return(status: 301, body: '', headers: {
                        Location: '/go/home'
@@ -78,6 +87,29 @@ module Abstract
           @backend.create
 
           expect(@starter_stub).to have_been_requested.once
+        end
+
+        it 'should load backend state' do
+          expect(@mock_state).to receive(:load)
+          @backend.create
+        end
+
+        it 'should create container once when empty state' do
+          allow(@mock_state).to receive(:load)
+          @backend.create
+          expect(@starter_stub).to have_been_requested.once
+        end
+
+        it 'should not create new  container when valid backend state' do
+          allow(@mock_state).to receive(:load).and_return(@valid_state)
+          @backend.create
+          expect(@starter_stub).not_to have_been_requested
+        end
+
+        it 'should load old container when valid backend state' do
+          allow(@mock_state).to receive(:load).and_return(@valid_state)
+          @backend.create
+          expect(@json_stub).to have_been_requested
         end
 
         it 'should save its state to a statefile' do
@@ -147,17 +179,6 @@ module Abstract
       end
 
       describe '#valid_state?' do
-        before(:each) do
-          @valid_state = {
-            'backend' => {
-              'type' => 'GoCD',
-              'driver' => 'docker',
-              'id' => @container_id,
-              'server_url' => @server_url
-            }
-          }
-        end
-
         it 'should be valid if all required fields are present' do
           validity = @backend.valid_state? @valid_state
 

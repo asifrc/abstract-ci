@@ -20,7 +20,8 @@ module Abstract
       end
 
       def create
-        return @server_url if @container
+        refresh_state
+        return @container if @container
         @container = Docker::Container.create(container_options)
         @container.start
         protocol = 'http'
@@ -79,6 +80,13 @@ module Abstract
       end
 
       private
+
+      def refresh_state
+        state = @state.load
+        return unless valid_state? state
+        @container = Docker::Container.get(state['backend']['id'])
+        @server_url = state['backend']['server_url']
+      end
 
       def container_options
         {
