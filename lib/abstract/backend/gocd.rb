@@ -41,7 +41,7 @@ module Abstract
         @container.kill if @container
         @container = nil
         @server_url = nil
-        @state.update 'backend', {}
+        @state.update 'backend', nil
       end
 
       def connected?

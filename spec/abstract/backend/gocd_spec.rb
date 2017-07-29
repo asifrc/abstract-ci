@@ -171,9 +171,9 @@ module Abstract
           expect(@kill_stub).to have_been_requested
         end
 
-        it 'should reset backend state to empty hash' do
+        it 'should reset backend state to nil' do
           allow(@mock_state).to receive(:load).and_return(@valid_state)
-          expect(@mock_state).to receive(:update).with('backend', {})
+          expect(@mock_state).to receive(:update).with('backend', nil)
           @backend.destroy
         end
 
