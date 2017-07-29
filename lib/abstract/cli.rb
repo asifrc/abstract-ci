@@ -12,5 +12,11 @@ module Abstract
       backend.create
       backend.wait_until_connected
     end
+
+    desc 'destroy', 'Destroy an existing CI server'
+    def destroy
+      backend = Backend::GoCD.new
+      backend.destroy
+    end
   end
 end
